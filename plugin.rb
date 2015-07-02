@@ -12,8 +12,8 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
   def register_middleware(omniauth)
     omniauth.provider :azure_oauth2,
                       :name => 'azure_oauth2',
-                      :client_id => "9777d5c7-a0a7-430f-abab-63db039af307", #GlobalSetting.azure_oauth2_client_id,
-                      :client_secret => "nGNdi1ECKT2GISkt2B3BedzbR1QZpHGyftMbqG6Dd7g=" #GlobalSetting.azure_oauth2_client_secret
+                      :client_id => GlobalSetting.azure_client_id,
+                      :client_secret => GlobalSetting.azure_client_secret
   end
 
   def after_authenticate(auth)
@@ -41,8 +41,8 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
 
 end
 
-title = GlobalSetting.try(:azure_oauth2_title) || "Azure AD"
-button_title = GlobalSetting.try(:azure_oauth2_title) || "with Azure AD"
+title = GlobalSetting.try(:azure_title) || "Azure AD"
+button_title = GlobalSetting.try(:azure_title) || "with Azure AD"
 
 auth_provider :title => button_title,
               :authenticator => AzureOAuth2Authenticator.new('azure_oauth2'),

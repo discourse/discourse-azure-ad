@@ -19,11 +19,6 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
   def after_authenticate(auth)
     result = Auth::Result.new
 
-    Rails.logger.error "=========================================================================="
-    Rails.logger.error auth.inspect
-    Rails.logger.error "=========================================================================="
-
-    # result.username = auth['username'] # TODO: do we get one?
     if info = auth['info'].present?
       email = auth['info']['email']
       if email.present?
@@ -32,7 +27,7 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
       end
     end
 
-    current_info = ::PluginStore.get("azure_oauth2", "meteor_user_#{auth['uid']}")
+    current_info = ::PluginStore.get("azure_oauth2", "azure_oauth2_user_#{auth['uid']}")
     if current_info
       result.user = User.where(id: current_info[:user_id]).first
     end
@@ -41,7 +36,7 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
   end
 
   def after_create_account(user, auth)
-    ::PluginStore.set("azure_oauth2", "azure_oauth2_user_#{auth['uid']}", {user_id: user.id })
+    ::PluginStore.set("azure_oauth2", "azure_oauth2_user_#{auth[:extra_data][:azure_user_id]}", {user_id: user.id })
   end
 
 end
@@ -52,6 +47,6 @@ button_title = GlobalSetting.try(:azure_oauth2_title) || "with Azure AD"
 auth_provider :title => button_title,
               :authenticator => AzureOAuth2Authenticator.new('azure_oauth2'),
               :message => "Authorizing with #{title} (make sure pop up blockers are not enabled)",
-              :frame_width => 600,
-              :frame_height => 380,
+              :frame_width => 725,
+              :frame_height => 500,
               :background_color => '#71B1D1'

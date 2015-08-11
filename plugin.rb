@@ -13,7 +13,8 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
     omniauth.provider :azure_oauth2,
                       :name => 'azure_oauth2',
                       :client_id => GlobalSetting.azure_client_id,
-                      :client_secret => GlobalSetting.azure_client_secret
+                      :client_secret => GlobalSetting.azure_client_secret,
+                      :resource => GlobalSetting.azure_resource
   end
 
   def after_authenticate(auth)

@@ -30,13 +30,20 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
     current_info = ::PluginStore.get("azure_oauth2", "azure_oauth2_user_#{auth['uid']}")
     if current_info
       result.user = User.where(id: current_info[:user_id]).first
+    elsif result.email_valid && (user = User.find_by_email(result.email))
+      result.user = user
+      plugin_store_azure_user auth['uid'], user.id
     end
     result.extra_data = { azure_user_id: auth['uid'] }
     result
   end
 
   def after_create_account(user, auth)
-    ::PluginStore.set("azure_oauth2", "azure_oauth2_user_#{auth[:extra_data][:azure_user_id]}", {user_id: user.id })
+    plugin_store_azure_user auth[:extra_data][:azure_user_id], user.id
+  end
+
+  def plugin_store_azure_user(azure_user_id, discourse_user_id)
+    ::PluginStore.set("azure_oauth2", "azure_oauth2_user_#{azure_user_id}", {user_id: discourse_user_id })
   end
 
 end

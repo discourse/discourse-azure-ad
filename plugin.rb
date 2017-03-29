@@ -6,7 +6,7 @@
 
 require_dependency 'auth/oauth2_authenticator'
 
-gem 'omniauth-azure-oauth2', '0.0.5'
+gem 'omniauth-azure-oauth2', '0.0.8'
 
 class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
   def register_middleware(omniauth)

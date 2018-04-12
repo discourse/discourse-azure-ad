@@ -18,6 +18,7 @@ If you're running Discourse from the Docker container, add these environment var
 
 * DISCOURSE_AZURE_CLIENT_ID
 * DISCOURSE_AZURE_CLIENT_SECRET
+* (optional) DISCOURSE_AZURE_TENANT_ID
 * (optional) DISCOURSE_AZURE_TITLE
 
 Or if you're not using Docker add the following to your `discourse.conf` file:

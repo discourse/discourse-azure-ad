@@ -12,6 +12,7 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
   def register_middleware(omniauth)
     omniauth.provider :azure_oauth2,
                       :name => 'azure_oauth2',
+                      :tenant_id => GlobalSetting.try(:azure_tenant_id) || "common",
                       :client_id => GlobalSetting.azure_client_id,
                       :client_secret => GlobalSetting.azure_client_secret
   end
@@ -25,6 +26,7 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
         result.email = email
         result.email_valid = true
       end
+      result.name = auth['info']['name']
     end
 
     current_info = ::PluginStore.get("azure_oauth2", "azure_oauth2_user_#{auth['uid']}")

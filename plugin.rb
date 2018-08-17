@@ -17,6 +17,10 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
                       :client_secret => GlobalSetting.azure_client_secret
   end
 
+  def enabled?
+    !GlobalSetting.azure_client_id.blank? && !GlobalSetting.azure_client_secret.blank?
+  end
+
   def after_authenticate(auth)
     result = Auth::Result.new
 
@@ -59,3 +63,11 @@ auth_provider :title => button_title,
               :frame_width => 725,
               :frame_height => 500,
               :background_color => '#71B1D1'
+
+register_css <<CSS
+
+.btn-social.azure_oauth2 {
+  background: #71B1D1;
+}
+
+CSS

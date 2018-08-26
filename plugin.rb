@@ -10,14 +10,18 @@ gem 'omniauth-azure-oauth2', '0.0.8'
 
 class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
   def register_middleware(omniauth)
-    omniauth.provider :azure_oauth2,
-                      :name => 'azure_oauth2',
-                      :client_id => GlobalSetting.azure_client_id,
-                      :client_secret => GlobalSetting.azure_client_secret
+    if enabled?
+      omniauth.provider :azure_oauth2,
+                        :name => 'azure_oauth2',
+                        :client_id => GlobalSetting.azure_client_id,
+                        :client_secret => GlobalSetting.azure_client_secret
+    end
   end
 
   def enabled?
-    !GlobalSetting.azure_client_id.blank? && !GlobalSetting.azure_client_secret.blank?
+    if defined?(GlobalSetting.azure_client_id) && defined?(GlobalSetting.azure_client_secret)
+      !GlobalSetting.azure_client_id.blank? && !GlobalSetting.azure_client_secret.blank?
+    end
   end
 
   def after_authenticate(auth)

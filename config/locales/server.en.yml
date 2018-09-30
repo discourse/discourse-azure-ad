@@ -1,0 +1,8 @@
+en:
+  site_settings:
+    azure_enabled: "Azure Ad is enabled"
+    azure_client_id: 'Client ID for Azure Ad'
+    azure_client_secret: 'Client Secret for Azure Ad'
+    azure_title: "The text for the Azure Ad message"
+    azure_button_title: "The text for the Azure Ad button"
+    azure_full_screen_login: "Use main browser window instead of popup for login"

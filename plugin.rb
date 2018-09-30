@@ -10,15 +10,15 @@ gem 'omniauth-azure-oauth2', '0.0.8'
 
 enabled_site_setting :azure_enabled
 
-class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
+class AzureAuthenticator < ::Auth::OAuth2Authenticator
   def name
-    'azure_oauth2'
+    'azure'
   end
   
   def register_middleware(omniauth)
     if enabled?
-      omniauth.provider :azure_oauth2,
-                        :name => 'azure_oauth2',
+      omniauth.provider :azure,
+                        :name => 'azure',
                         :client_id => SiteSetting.azure_client_id,
                         :client_secret => SiteSetting.azure_client_secret
     end
@@ -37,7 +37,7 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
 
   def revoke(user, skip_remote: false)
     # info = GoogleUserInfo.find_by(user_id: user.id)
-    info = ::PluginStore.get("azure_oauth2", "azure_oauth2_user_#{user['uid']}")
+    info = ::PluginStore.get("azure", "azure_user_#{user['uid']}")
     raise Discourse::NotFound if info.nil?
 
     # We get a temporary token from google upon login but do not need it, and do not store it.
@@ -62,7 +62,7 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
       end
     end
 
-    current_info = ::PluginStore.get("azure_oauth2", "azure_oauth2_user_#{auth['uid']}")
+    current_info = ::PluginStore.get("azure", "azure_user_#{auth['uid']}")
     if current_info
       result.user = User.where(id: current_info[:user_id]).first
     elsif result.email_valid && (user = User.find_by_email(result.email))
@@ -78,7 +78,7 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
   end
 
   def plugin_store_azure_user(azure_user_id, discourse_user_id)
-    ::PluginStore.set("azure_oauth2", "azure_oauth2_user_#{azure_user_id}", {user_id: discourse_user_id })
+    ::PluginStore.set("azure", "azure_user_#{azure_user_id}", {user_id: discourse_user_id })
   end
 
 end
@@ -92,7 +92,7 @@ end
 auth_provider :title => "azure_button_title",
               :enabled_setting => "azure_enabled",
               :title_setting => "azure_button_title",
-              :authenticator => AzureOAuth2Authenticator.new('azure_oauth2'),
+              :authenticator => AzureAuthenticator.new('azure'),
               :message => "Authorizing with Azure AD (make sure pop up blockers are not enabled)",
               :frame_width => 725,
               :frame_height => 500,
@@ -100,10 +100,10 @@ auth_provider :title => "azure_button_title",
 
 register_css <<CSS
 
-.btn-social.azure_oauth2 {
+.btn-social.azure {
   background: #71B1D1;
 }
-.btn-social.azure_oauth2::before {
+.btn-social.azure::before {
   content: $fa-var-windows;
 }
 CSS

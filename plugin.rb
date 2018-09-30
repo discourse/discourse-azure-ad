@@ -17,7 +17,7 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
   
   def register_middleware(omniauth)
     if enabled?
-      omniauth.provider :azure,
+      omniauth.provider :azure_oauth2,
                         :name => 'azure',
                         :client_id => SiteSetting.azure_client_id,
                         :client_secret => SiteSetting.azure_client_secret

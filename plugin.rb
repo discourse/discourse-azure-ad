@@ -78,7 +78,7 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     if existing_account && (user_info.nil? || existing_account.id != user_info.user_id)
       user_info.destroy! if user_info
       result.user = existing_account
-      user_info = Oauth2UserInfo.create!({ user_id: result.user.id, , provider: @oauth_provider }.merge(azure_hash))
+      user_info = Oauth2UserInfo.create!({ user_id: result.user.id, provider: @oauth_provider }.merge(azure_hash))
     else
       result.user = user_info&.user
     end

@@ -19,7 +19,7 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
   end
 
   def enabled?
-    if SiteSetting.azure_enabled && defined?(SiteSetting.azure_client_id) && defined?(SiteSetting.azure_client_secret)
+    if SiteSetting.azure_enabled? && defined?(SiteSetting.azure_client_id) && defined?(SiteSetting.azure_client_secret)
       !SiteSetting.azure_client_id.blank? && !SiteSetting.azure_client_secret.blank?
     end
   end

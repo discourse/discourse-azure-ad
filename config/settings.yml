@@ -1,5 +1,5 @@
-login:
-  azure_enabled:
+login: 
+  azure_enabled: 
     default: false
     client: true
   azure_client_id: ''
@@ -7,6 +7,6 @@ login:
   azure_title: ''
     default: 'Azure AD'
     client: true
-  azure_button_title:
+  azure_button_title: 
     default: 'with Azure AD'
     client: true

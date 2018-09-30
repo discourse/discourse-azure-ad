@@ -1,7 +1,7 @@
 # name: discourse-azure-ad
 # about: Microsoft Azure Active Directory OAuth support for Discourse
-# version: 0.1
-# authors: Neil Lalonde
+# version: 0.2
+# authors: Neil Lalonde, Ahmader
 # url: https://github.com/discourse/discourse-azure-ad
 
 require_dependency 'auth/oauth2_authenticator'
@@ -51,34 +51,67 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     true
   end
 
-  def after_authenticate(auth, existing_account: nil)
+  def after_authenticate(auth_token, existing_account: nil)
     result = Auth::Result.new
 
-    if info = auth['info'].present?
-      email = auth['info']['email']
+    session_info = parse_auth_token(auth_token)
+    azure_hash = session_info[:azure]
+    
+    result.email = email = session_info[:email]
+    result.email_valid = !email.blank?
+    result.name = facebook_hash[:name]
+    
+    result.extra_data = azure_hash
+    
+    user_info = AzureUserInfo.find_by(azure_user_id: azure_hash[:azure_user_id])
+
+    if info = auth_token['info'].present?
+      email = auth_token['info']['email']
       if email.present?
         result.email = email
         result.email_valid = true
       end
     end
 
-    current_info = ::PluginStore.get("azure", "azure_user_#{auth['uid']}")
+    current_info = ::PluginStore.get("azure", "azure_user_#{auth_token['uid']}")
     if current_info
       result.user = User.where(id: current_info[:user_id]).first
     elsif result.email_valid && (user = User.find_by_email(result.email))
       result.user = user
-      plugin_store_azure_user auth['uid'], user.id
+      plugin_store_azure_user auth_token['uid'], user.id
     end
-    result.extra_data = { azure_user_id: auth['uid'] }
+    result.extra_data = { azure_user_id: auth_token['uid'] }
     result
   end
 
-  def after_create_account(user, auth)
-    plugin_store_azure_user auth[:extra_data][:azure_user_id], user.id
+  def after_create_account(user, auth_token)
+    plugin_store_azure_user auth_token[:extra_data][:azure_user_id], user.id
   end
 
   def plugin_store_azure_user(azure_user_id, discourse_user_id)
     ::PluginStore.set("azure", "azure_user_#{azure_user_id}", {user_id: discourse_user_id })
+  end
+  
+  protected
+
+  def parse_hash(auth_token)
+    raw_info = auth_token["extra"]["raw_info"]
+    info = auth_token["info"]
+    email = auth_token["info"][:email]
+    
+    
+    {
+      azure: {
+        azure_user_id: auth_token[:uid] || raw_info[:sub],
+        email: email,
+        first_name: raw_info[:first_name],
+        last_name: raw_info[:last_name],
+        name: raw_info[:name]
+      },
+      email: email,
+      email_valid: true
+    }
+
   end
 
 end

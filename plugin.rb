@@ -13,15 +13,35 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
     if enabled?
       omniauth.provider :azure_oauth2,
                         :name => 'azure_oauth2',
-                        :client_id => GlobalSetting.azure_client_id,
-                        :client_secret => GlobalSetting.azure_client_secret
+                        :client_id => SiteSetting.azure_client_id,
+                        :client_secret => SiteSetting.azure_client_secret
     end
   end
 
   def enabled?
-    if defined?(GlobalSetting.azure_client_id) && defined?(GlobalSetting.azure_client_secret)
-      !GlobalSetting.azure_client_id.blank? && !GlobalSetting.azure_client_secret.blank?
+    if SiteSetting.azure_enabled && defined?(SiteSetting.azure_client_id) && defined?(SiteSetting.azure_client_secret)
+      !SiteSetting.azure_client_id.blank? && !SiteSetting.azure_client_secret.blank?
     end
+  end
+
+  def can_revoke?
+    true
+  end
+
+  def revoke(user, skip_remote: false)
+    # info = GoogleUserInfo.find_by(user_id: user.id)
+    info = ::PluginStore.get("azure_oauth2", "azure_oauth2_user_#{user['uid']}")
+    raise Discourse::NotFound if info.nil?
+
+    # We get a temporary token from google upon login but do not need it, and do not store it.
+    # Therefore we do not have any way to revoke the token automatically on google's end
+
+    info.destroy!
+    true
+  end
+
+  def can_connect_existing_user?
+    true
   end
 
   def after_authenticate(auth)
@@ -56,12 +76,17 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
 
 end
 
-title = GlobalSetting.try(:azure_title) || "Azure AD"
-button_title = GlobalSetting.try(:azure_title) || "with Azure AD"
+# title = GlobalSetting.try(:azure_title) || "Azure AD"
+# button_title = GlobalSetting.try(:azure_title) || "with Azure AD"
 
-auth_provider :title => button_title,
+# title = GlobalSetting.try(:azure_title) || "Azure AD"
+# button_title = GlobalSetting.try(:azure_title) || "with Azure AD"
+
+auth_provider :title => "azure_button_title",
+              :enabled_setting => "azure_enabled",
+              :title_setting => "azure_button_title",
               :authenticator => AzureOAuth2Authenticator.new('azure_oauth2'),
-              :message => "Authorizing with #{title} (make sure pop up blockers are not enabled)",
+              :message => "Authorizing with #{SiteSetting.azure_title} (make sure pop up blockers are not enabled)",
               :frame_width => 725,
               :frame_height => 500,
               :background_color => '#71B1D1'

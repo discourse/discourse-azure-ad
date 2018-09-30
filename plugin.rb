@@ -12,13 +12,13 @@ enabled_site_setting :azure_enabled
 
 class AzureAuthenticator < ::Auth::OAuth2Authenticator
   def name
-    'azure_oauth2'
+    'azure'
   end
   
   def register_middleware(omniauth)
     if enabled?
       omniauth.provider :azure_oauth2,
-                        :name => 'azure_oauth2',
+                        :name => 'azure',
                         :client_id => SiteSetting.azure_client_id,
                         :client_secret => SiteSetting.azure_client_secret
     end
@@ -37,7 +37,7 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
 
   def revoke(user, skip_remote: false)
     # info = GoogleUserInfo.find_by(user_id: user.id)
-    info = ::PluginStore.get("azure_oauth2", "azure_oauth2_user_#{user['uid']}")
+    info = ::PluginStore.get("azure", "azure_user_#{user['uid']}")
     raise Discourse::NotFound if info.nil?
 
     # We get a temporary token from google upon login but do not need it, and do not store it.
@@ -51,7 +51,7 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     true
   end
 
-  def after_authenticate(auth)
+  def after_authenticate(auth, existing_account: nil)
     result = Auth::Result.new
 
     if info = auth['info'].present?
@@ -92,7 +92,7 @@ end
 auth_provider :title => "azure_button_title",
               :enabled_setting => "azure_enabled",
               :title_setting => "azure_button_title",
-              :authenticator => AzureAuthenticator.new('azure_oauth2'),
+              :authenticator => AzureAuthenticator.new('azure'),
               :message => "Authorizing with Azure AD (make sure pop up blockers are not enabled)",
               :frame_width => 725,
               :frame_height => 500,

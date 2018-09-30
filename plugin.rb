@@ -137,6 +137,8 @@ auth_provider :title => "azure_button_title",
               :message => "Authorizing with Azure AD (make sure pop up blockers are not enabled)",
               :frame_width => 725,
               :frame_height => 500,
+              :pretty_name => 'AZure'
+              :description => 'AzURe'
               :background_color => '#71B1D1'
 
 register_css <<CSS

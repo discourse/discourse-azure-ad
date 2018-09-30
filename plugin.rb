@@ -117,9 +117,9 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
       azure: {
         azure_user_id: auth_token[:uid] || raw_info[:sub],
         email: email,
-        first_name: raw_info[:first_name],
-        last_name: raw_info[:last_name],
-        name: raw_info[:name]
+        first_name: info[:first_name],
+        last_name: info[:last_name],
+        name: info[:name]
       },
       email: email,
       email_valid: true

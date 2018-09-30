@@ -1,7 +1,4 @@
 login:
-  azure: 
-    name: 'Azure'
-  azure_name: 'AzureName'
   azure_enabled:
     default: false
     client: true

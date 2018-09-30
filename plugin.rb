@@ -38,7 +38,7 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
 
   def description_for_user(user)
     info = Oauth2UserInfo.find_by(user_id: user.id, provider: @oauth_provider)
-    info&.email || info&.username || ""
+    info&.email || info&.username || "NO_DESC"
   end
 
   def can_revoke?
@@ -55,6 +55,11 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
 
     info.destroy!
     true
+  end
+
+  def pretty_name
+    name = 'AZURe'
+    name
   end
 
   def can_connect_existing_user?

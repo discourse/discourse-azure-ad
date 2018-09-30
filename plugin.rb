@@ -15,6 +15,11 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     'azure'
   end
   
+  def initialize(name, opts = {})
+    @oauth_provider = 'azure'
+  end
+  
+  
   def register_middleware(omniauth)
     if enabled?
       omniauth.provider :azure_oauth2,
@@ -31,17 +36,17 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     end
   end
 
-  # def description_for_user(user)
-  #   info = AzureUserInfo.find_by(user_id: user.id)
-  #   info&.email || info&.username || ""
-  # end
+  def description_for_user(user)
+    info = Oauth2UserInfo.find_by(user_id: user.id, provider: @oauth_provider)
+    info&.email || info&.username || ""
+  end
 
   def can_revoke?
     true
   end
 
   def revoke(user, skip_remote: false)
-    info = AzureUserInfo.find_by(user_id: user.id)
+    info = Oauth2UserInfo.find_by(user_id: user.id, provider: @oauth_provider)
     # info = ::PluginStore.get("azure", "azure_user_#{user['uid']}")
     raise Discourse::NotFound if info.nil?
 
@@ -68,18 +73,18 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     
     result.extra_data = azure_hash
     
-    user_info = AzureUserInfo.find_by(azure_user_id: azure_hash[:azure_user_id])
+    user_info = Oauth2UserInfo.find_by(azure_user_id: azure_hash[:azure_user_id], provider: @oauth_provider)
 
     if existing_account && (user_info.nil? || existing_account.id != user_info.user_id)
       user_info.destroy! if user_info
       result.user = existing_account
-      user_info = AzureUserInfo.create!({ user_id: result.user.id }.merge(azure_hash))
+      user_info = Oauth2UserInfo.create!({ user_id: result.user.id, , provider: @oauth_provider }.merge(azure_hash))
     else
       result.user = user_info&.user
     end
 
     if !result.user && !email.blank? && result.user = User.find_by_email(email)
-      AzureUserInfo.create!({ user_id: result.user.id }.merge(azure_hash))
+      Oauth2UserInfo.create!({ user_id: result.user.id, provider: @oauth_provider }.merge(azure_hash))
     end
     
     user_info.update_columns(azure_hash) if user_info
@@ -96,7 +101,7 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
 
   def after_create_account(user, auth_token)
     extra_data = auth_token[:extra_data]
-    AzureUserInfo.create!({ user_id: user.id }.merge(extra_data))
+    Oauth2UserInfo.create!({ user_id: user.id, provider: @oauth_provider }.merge(extra_data))
 
     true
   end

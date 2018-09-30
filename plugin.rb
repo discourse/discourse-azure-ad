@@ -64,7 +64,7 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     
     result.email = email = session_info[:email]
     result.email_valid = !email.blank?
-    result.name = facebook_hash[:name]
+    result.name = azure_hash[:name]
     
     result.extra_data = azure_hash
     

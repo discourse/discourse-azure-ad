@@ -31,13 +31,18 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     end
   end
 
+  def description_for_user(user)
+    info = AzureUserInfo.find_by(user_id: user.id)
+    info&.email || info&.username || ""
+  end
+
   def can_revoke?
     true
   end
 
   def revoke(user, skip_remote: false)
-    # info = GoogleUserInfo.find_by(user_id: user.id)
-    info = ::PluginStore.get("azure", "azure_user_#{user['uid']}")
+    info = AzureUserInfo.find_by(user_id: user.id)
+    # info = ::PluginStore.get("azure", "azure_user_#{user['uid']}")
     raise Discourse::NotFound if info.nil?
 
     # We get a temporary token from google upon login but do not need it, and do not store it.
@@ -54,7 +59,7 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
   def after_authenticate(auth_token, existing_account: nil)
     result = Auth::Result.new
 
-    session_info = parse_auth_token(auth_token)
+    session_info = parse_hash(auth_token)
     azure_hash = session_info[:azure]
     
     result.email = email = session_info[:email]
@@ -65,6 +70,20 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     
     user_info = AzureUserInfo.find_by(azure_user_id: azure_hash[:azure_user_id])
 
+    if existing_account && (user_info.nil? || existing_account.id != user_info.user_id)
+      user_info.destroy! if user_info
+      result.user = existing_account
+      user_info = AzureUserInfo.create!({ user_id: result.user.id }.merge(azure_hash))
+    else
+      result.user = user_info&.user
+    end
+
+    if !result.user && !email.blank? && result.user = User.find_by_email(email)
+      AzureUserInfo.create!({ user_id: result.user.id }.merge(azure_hash))
+    end
+    
+    user_info.update_columns(azure_hash) if user_info
+
     if info = auth_token['info'].present?
       email = auth_token['info']['email']
       if email.present?
@@ -72,20 +91,14 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
         result.email_valid = true
       end
     end
-
-    current_info = ::PluginStore.get("azure", "azure_user_#{auth_token['uid']}")
-    if current_info
-      result.user = User.where(id: current_info[:user_id]).first
-    elsif result.email_valid && (user = User.find_by_email(result.email))
-      result.user = user
-      plugin_store_azure_user auth_token['uid'], user.id
-    end
-    result.extra_data = { azure_user_id: auth_token['uid'] }
     result
   end
 
   def after_create_account(user, auth_token)
-    plugin_store_azure_user auth_token[:extra_data][:azure_user_id], user.id
+    extra_data = auth_token[:extra_data]
+    AzureUserInfo.create!({ user_id: user.id }.merge(extra_data))
+
+    true
   end
 
   def plugin_store_azure_user(azure_user_id, discourse_user_id)

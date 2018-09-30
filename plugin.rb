@@ -82,14 +82,14 @@ end
 # title = GlobalSetting.try(:azure_title) || "Azure AD"
 # button_title = GlobalSetting.try(:azure_title) || "with Azure AD"
 
-# title = GlobalSetting.try(:azure_title) || "Azure AD"
-# button_title = GlobalSetting.try(:azure_title) || "with Azure AD"
+title = SiteSetting.try(:azure_title) || "Azure AD"
+button_title = SiteSetting.try(:azure_button_title) || "with Azure AD"
 
 auth_provider :title => "azure_button_title",
               :enabled_setting => "azure_enabled",
               :title_setting => "azure_button_title",
               :authenticator => AzureOAuth2Authenticator.new('azure_oauth2'),
-              :message => "Authorizing with Azure AD (make sure pop up blockers are not enabled)",
+              :message => "Authorizing with #{title} (make sure pop up blockers are not enabled)",
               :frame_width => 725,
               :frame_height => 500,
               :background_color => '#71B1D1'

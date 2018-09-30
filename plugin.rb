@@ -21,7 +21,10 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
   end
 
   def enabled?
-    SiteSetting.azure_enabled
+    # SiteSetting.azure_enabled
+    if SiteSetting.azure_enabled? && defined?(SiteSetting.azure_client_id) && defined?(SiteSetting.azure_client_secret)
+      !SiteSetting.azure_client_id.blank? && !SiteSetting.azure_client_secret.blank?
+    end
   end
 
   def can_revoke?
@@ -86,7 +89,7 @@ auth_provider :title => "azure_button_title",
               :enabled_setting => "azure_enabled",
               :title_setting => "azure_button_title",
               :authenticator => AzureOAuth2Authenticator.new('azure_oauth2'),
-              :message => "Authorizing with #{SiteSetting.azure_title} (make sure pop up blockers are not enabled)",
+              :message => "Authorizing with Azure AD (make sure pop up blockers are not enabled)",
               :frame_width => 725,
               :frame_height => 500,
               :background_color => '#71B1D1'

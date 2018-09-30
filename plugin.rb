@@ -8,6 +8,8 @@ require_dependency 'auth/oauth2_authenticator'
 
 gem 'omniauth-azure-oauth2', '0.0.8'
 
+enabled_site_setting :azure_enabled
+
 class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
   def register_middleware(omniauth)
     if enabled?
@@ -19,9 +21,7 @@ class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
   end
 
   def enabled?
-    if SiteSetting.azure_enabled? && defined?(SiteSetting.azure_client_id) && defined?(SiteSetting.azure_client_secret)
-      !SiteSetting.azure_client_id.blank? && !SiteSetting.azure_client_secret.blank?
-    end
+    SiteSetting.azure_enabled
   end
 
   def can_revoke?

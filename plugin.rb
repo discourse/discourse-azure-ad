@@ -31,10 +31,10 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     end
   end
 
-  def description_for_user(user)
-    info = AzureUserInfo.find_by(user_id: user.id)
-    info&.email || info&.username || ""
-  end
+  # def description_for_user(user)
+  #   info = AzureUserInfo.find_by(user_id: user.id)
+  #   info&.email || info&.username || ""
+  # end
 
   def can_revoke?
     true

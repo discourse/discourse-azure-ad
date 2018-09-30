@@ -47,7 +47,7 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
 
   def revoke(user, skip_remote: false)
     info = Oauth2UserInfo.find_by(user_id: user.id, provider: @oauth_provider)
-    # info = ::PluginStore.get("azure", "azure_user_#{user['uid']}")
+    
     raise Discourse::NotFound if info.nil?
 
     # We get a temporary token from google upon login but do not need it, and do not store it.
@@ -65,6 +65,7 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     result = Auth::Result.new
 
     session_info = parse_hash(auth_token)
+    oauth2_uid = auth_token[:uid]
     azure_hash = session_info[:azure]
     
     result.email = email = session_info[:email]
@@ -73,12 +74,12 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     
     result.extra_data = azure_hash
     
-    user_info = Oauth2UserInfo.find_by(azure_user_id: azure_hash[:azure_user_id], provider: @oauth_provider)
+    user_info = Oauth2UserInfo.find_by(uid: oauth2_uid, provider: @oauth_provider)
 
     if existing_account && (user_info.nil? || existing_account.id != user_info.user_id)
       user_info.destroy! if user_info
       result.user = existing_account
-      user_info = Oauth2UserInfo.create!({ user_id: result.user.id, provider: @oauth_provider }.merge(azure_hash))
+      user_info = Oauth2UserInfo.create!({user: result.user, provider: @oauth_provider }.merge(azure_hash))
     else
       result.user = user_info&.user
     end
@@ -89,13 +90,6 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     
     user_info.update_columns(azure_hash) if user_info
 
-    if info = auth_token['info'].present?
-      email = auth_token['info']['email']
-      if email.present?
-        result.email = email
-        result.email_valid = true
-      end
-    end
     result
   end
 
@@ -105,10 +99,7 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
 
     true
   end
-
-  def plugin_store_azure_user(azure_user_id, discourse_user_id)
-    ::PluginStore.set("azure", "azure_user_#{azure_user_id}", {user_id: discourse_user_id })
-  end
+  
   
   protected
 
@@ -120,7 +111,8 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
     
     {
       azure: {
-        azure_user_id: auth_token[:uid] || raw_info[:sub],
+        uid: auth_token[:uid]
+        user_id: auth_token[:uid] || raw_info[:sub],
         email: email,
         first_name: info[:first_name],
         last_name: info[:last_name],

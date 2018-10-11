@@ -38,7 +38,7 @@ class AzureAuthenticator < ::Auth::OAuth2Authenticator
 
   def description_for_user(user)
     info = Oauth2UserInfo.find_by(user_id: user.id, provider: @oauth_provider)
-    info&.email || info&.username || "NO_DESC"
+    info&.email || info&.username || ""
   end
 
   def can_revoke?

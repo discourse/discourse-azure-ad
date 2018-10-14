@@ -2,6 +2,9 @@
 
 A Discourse plugin to enable login Microsoft Azure Active Directory users via OAuth2.
 
+## Installation
+
+Follow the directions at [Install a Plugin](https://meta.discourse.org/t/install-a-plugin/19157) using https://github.com/discourse/discourse-oauth2-basic.git as the repository URL.
 
 ### Configuration
 
@@ -14,14 +17,11 @@ Add your Discourse site as an application in Windows Azure Active Directory (WAA
 * Click on the new app, choose **Configure** from the top nav, and generate a new key in the "**Keys**" section.
 * In the Configure section, you'll find the **client ID**, and the key that you generated will be used as the **client secret**. Also make sure that the Reply URL is the full url to /auth/azure_oauth2/callback.
 
-If you're running Discourse from the Docker container, add these environment variables to your container's yml file:
+Visit your **Admin** > **Settings** > **Login** and fill in the basic
+configuration for the Azure AD provider:
 
-* DISCOURSE_AZURE_CLIENT_ID
-* DISCOURSE_AZURE_CLIENT_SECRET
-* (optional) DISCOURSE_AZURE_TITLE
+* `azure_enabled` - check this off to enable the feature
 
-Or if you're not using Docker add the following to your `discourse.conf` file:
+* `azure_client_id` - the client ID from your Azure Ad
 
-* azure_client_id
-* azure_client_secret
-* (optional) azure_title
+* `azure_client_secret` - the client secret from your Azure Ad

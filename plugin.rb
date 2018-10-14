@@ -1,75 +1,157 @@
 # name: discourse-azure-ad
 # about: Microsoft Azure Active Directory OAuth support for Discourse
-# version: 0.1
-# authors: Neil Lalonde
+# version: 0.2
+# authors: Neil Lalonde, Ahmader
 # url: https://github.com/discourse/discourse-azure-ad
 
 require_dependency 'auth/oauth2_authenticator'
 
 gem 'omniauth-azure-oauth2', '0.0.8'
 
-class AzureOAuth2Authenticator < ::Auth::OAuth2Authenticator
+enabled_site_setting :azure_enabled
+
+class AzureAuthenticator < ::Auth::OAuth2Authenticator
+  def name
+    'azure'
+  end
+  
+  def initialize(name, opts = {})
+    @oauth_provider = 'azure'
+  end
+  
+  
   def register_middleware(omniauth)
     if enabled?
       omniauth.provider :azure_oauth2,
-                        :name => 'azure_oauth2',
-                        :client_id => GlobalSetting.azure_client_id,
-                        :client_secret => GlobalSetting.azure_client_secret
+                        :name => 'azure',
+                        :client_id => SiteSetting.azure_client_id,
+                        :client_secret => SiteSetting.azure_client_secret
     end
   end
 
   def enabled?
-    if defined?(GlobalSetting.azure_client_id) && defined?(GlobalSetting.azure_client_secret)
-      !GlobalSetting.azure_client_id.blank? && !GlobalSetting.azure_client_secret.blank?
+    # SiteSetting.azure_enabled
+    if SiteSetting.azure_enabled? && defined?(SiteSetting.azure_client_id) && defined?(SiteSetting.azure_client_secret)
+      !SiteSetting.azure_client_id.blank? && !SiteSetting.azure_client_secret.blank?
     end
   end
 
-  def after_authenticate(auth)
+  def description_for_user(user)
+    info = Oauth2UserInfo.find_by(user_id: user.id, provider: @oauth_provider)
+    info&.email || info&.username || ""
+  end
+
+  def can_revoke?
+    true
+  end
+
+  def revoke(user, skip_remote: false)
+    info = Oauth2UserInfo.find_by(user_id: user.id, provider: @oauth_provider)
+    
+    raise Discourse::NotFound if info.nil?
+
+    # We get a temporary token from google upon login but do not need it, and do not store it.
+    # Therefore we do not have any way to revoke the token automatically on google's end
+
+    info.destroy!
+    true
+  end
+
+  def pretty_name
+    name = 'AZURe'
+    name
+  end
+
+  def can_connect_existing_user?
+    true
+  end
+
+  def after_authenticate(auth_token, existing_account: nil)
     result = Auth::Result.new
 
-    if info = auth['info'].present?
-      email = auth['info']['email']
-      if email.present?
-        result.email = email
-        result.email_valid = true
-      end
+    session_info = parse_hash(auth_token)
+    oauth2_uid = auth_token[:uid]
+    azure_hash = session_info[:azure]
+    
+    result.email = email = session_info[:email]
+    result.email_valid = !email.blank?
+    result.name = azure_hash[:name]
+    
+    result.extra_data = azure_hash
+    
+    user_info = Oauth2UserInfo.find_by(uid: oauth2_uid, provider: @oauth_provider)
+
+    if existing_account && (user_info.nil? || existing_account.id != user_info.user_id)
+      user_info.destroy! if user_info
+      result.user = existing_account
+      user_info = Oauth2UserInfo.create!({user: result.user, provider: @oauth_provider }.merge(azure_hash))
+    else
+      result.user = user_info&.user
     end
 
-    current_info = ::PluginStore.get("azure_oauth2", "azure_oauth2_user_#{auth['uid']}")
-    if current_info
-      result.user = User.where(id: current_info[:user_id]).first
-    elsif result.email_valid && (user = User.find_by_email(result.email))
-      result.user = user
-      plugin_store_azure_user auth['uid'], user.id
+    if !result.user && !email.blank? && result.user = User.find_by_email(email)
+      Oauth2UserInfo.create!({ user_id: result.user.id, provider: @oauth_provider }.merge(azure_hash))
     end
-    result.extra_data = { azure_user_id: auth['uid'] }
+    
+    user_info.update_columns(azure_hash) if user_info
+
     result
   end
 
-  def after_create_account(user, auth)
-    plugin_store_azure_user auth[:extra_data][:azure_user_id], user.id
-  end
+  def after_create_account(user, auth_token)
+    extra_data = auth_token[:extra_data]
+    Oauth2UserInfo.create!({ user_id: user.id, provider: @oauth_provider }.merge(extra_data))
 
-  def plugin_store_azure_user(azure_user_id, discourse_user_id)
-    ::PluginStore.set("azure_oauth2", "azure_oauth2_user_#{azure_user_id}", {user_id: discourse_user_id })
+    true
+  end
+  
+  
+  protected
+
+  def parse_hash(auth_token)
+    raw_info = auth_token["extra"]["raw_info"]
+    info = auth_token["info"]
+    email = auth_token["info"][:email]
+    
+    
+    {
+      azure: {
+        uid: auth_token[:uid],
+        user_id: auth_token[:uid] || raw_info[:sub],
+        email: email,
+        name: info[:name]
+      },
+      email: email,
+      email_valid: true
+    }
+
   end
 
 end
 
-title = GlobalSetting.try(:azure_title) || "Azure AD"
-button_title = GlobalSetting.try(:azure_title) || "with Azure AD"
+# title = GlobalSetting.try(:azure_title) || "Azure AD"
+# button_title = GlobalSetting.try(:azure_title) || "with Azure AD"
 
-auth_provider :title => button_title,
-              :authenticator => AzureOAuth2Authenticator.new('azure_oauth2'),
-              :message => "Authorizing with #{title} (make sure pop up blockers are not enabled)",
+# title = SiteSetting.try(:azure_title) || "Azure AD"
+# button_title = SiteSetting.try(:azure_button_title) || "with Azure AD"
+
+auth_provider :title => "azure_button_title",
+              :enabled_setting => "azure_enabled",
+              :title_setting => "azure_button_title",
+              :authenticator => AzureAuthenticator.new('azure'),
+              :message => "Authorizing with Azure AD (make sure pop up blockers are not enabled)",
               :frame_width => 725,
               :frame_height => 500,
+              :pretty_name => 'AZure',
+              :description => 'AzURe',
               :background_color => '#71B1D1'
 
 register_css <<CSS
 
-.btn-social.azure_oauth2 {
+.btn-social.azure {
   background: #71B1D1;
 }
-
+.btn-social.azure::before {
+  content: $fa-var-windows;
+}
 CSS
